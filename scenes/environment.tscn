@@ -1,0 +1,226 @@
+[gd_scene load_steps=10 format=1]
+
+[ext_resource path="res://cubemaps/skybox.cbm" type="CubeMap" id=1]
+[ext_resource path="res://models/levels/floor.scn" type="PackedScene" id=2]
+[ext_resource path="res://models/props/destroyed_walls/imported/wall1.scn" type="PackedScene" id=3]
+[ext_resource path="res://models/props/destroyed_walls/imported/wall3.scn" type="PackedScene" id=4]
+[ext_resource path="res://models/props/destroyed_walls/imported/wall2.scn" type="PackedScene" id=5]
+[ext_resource path="res://models/props/destroyed_walls/imported/wall4.scn" type="PackedScene" id=6]
+[ext_resource path="res://models/props/metal_fence/fence1.scn" type="PackedScene" id=7]
+[ext_resource path="res://models/props/metal_fence/fence2.scn" type="PackedScene" id=8]
+
+[sub_resource type="Environment" id=2]
+
+ambient_light/enabled = true
+ambient_light/color = Color( 1, 1, 1, 1 )
+ambient_light/energy = 0.6
+fxaa/enabled = false
+background/mode = 4
+background/color = Color( 0, 0, 0, 1 )
+background/cubemap = ExtResource( 1 )
+background/energy = 1.0
+background/scale = 1.0
+background/glow = 0.0
+background/canvas_max_layer = null
+glow/enabled = false
+glow/blur_passes = 1
+glow/blur_scale = 1
+glow/blur_strength = 1
+glow/blur_blend_mode = null
+glow/bloom = 0.1
+glow/bloom_treshold = 0.5
+dof_blur/enabled = false
+dof_blur/blur_passes = 1
+dof_blur/begin = 100.0
+dof_blur/range = 10.0
+hdr/enabled = false
+hdr/tonemapper = 0
+hdr/exposure = 0.4
+hdr/white = 1.0
+hdr/glow_treshold = 0.95
+hdr/glow_scale = 0.2
+hdr/min_luminance = 0.4
+hdr/max_luminance = 8.0
+hdr/exposure_adj_speed = 0.5
+fog/enabled = false
+fog/begin = 100.0
+fog/begin_color = Color( 0, 0, 0, 1 )
+fog/end_color = Color( 0, 0, 0, 1 )
+fog/attenuation = 1.0
+fog/bg = true
+bcs/enabled = false
+bcs/brightness = 1.0
+bcs/contrast = 1.0
+bcs/saturation = 1.0
+srgb/enabled = false
+
+[node name="env" type="WorldEnvironment"]
+
+_import_transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0 )
+environment = SubResource( 2 )
+
+[node name="sun" type="DirectionalLight" parent="."]
+
+_import_transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0 )
+transform/local = Transform( 0.573576, 0.627507, -0.526541, 0, 0.642788, 0.766044, 0.819152, -0.439385, 0.368688, 0, 0, 0 )
+layers = 1
+params/enabled = true
+params/editor_only = false
+params/bake_mode = 0
+params/energy = 1.0
+colors/diffuse = Color( 1, 1, 1, 1 )
+colors/specular = Color( 1, 1, 1, 1 )
+shadow/shadow = true
+shadow/darkening = 0.0
+shadow/z_offset = 0.05
+shadow/z_slope_scale = 0.0
+shadow/esm_multiplier = 60.0
+shadow/blur_passes = 1.0
+projector = null
+operator = 0
+shadow/mode = 3
+shadow/max_distance = 50.0
+shadow/split_weight = 0.5
+shadow/zoffset_scale = 2.0
+
+[node name="floor" parent="." instance=ExtResource( 2 )]
+
+[node name="walls" type="Spatial" parent="."]
+
+editor/display_folded = true
+_import_transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0 )
+transform/local = Transform( 0.560625, 0, 0, 0, 0.560625, 0, 0, 0, 0.560625, 0, 0, 0 )
+
+[node name="Spatial" parent="walls" instance=ExtResource( 3 )]
+
+transform/local = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 19, 0, 6 )
+
+[node name="Spatial 2" parent="walls" instance=ExtResource( 4 )]
+
+transform/local = Transform( -4.37114e-08, 0, -1, 0, 1, 0, 1, 0, -4.37114e-08, 19, 0, 23 )
+
+[node name="Spatial 3" parent="walls" instance=ExtResource( 5 )]
+
+transform/local = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, -10 )
+
+[node name="Spatial 4" parent="walls" instance=ExtResource( 6 )]
+
+transform/local = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, -10 )
+
+[node name="Spatial5" parent="walls" instance=ExtResource( 6 )]
+
+transform/local = Transform( -1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 8, 0, 9 )
+
+[node name="Spatial 5" parent="walls" instance=ExtResource( 5 )]
+
+transform/local = Transform( -1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 4, 0, 21 )
+
+[node name="Spatial 6" parent="walls" instance=ExtResource( 4 )]
+
+transform/local = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -22, 0, 0 )
+
+[node name="Spatial7" parent="walls" instance=ExtResource( 4 )]
+
+transform/local = Transform( -1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, -22, 0, 17 )
+
+[node name="Spatial 7" parent="walls" instance=ExtResource( 3 )]
+
+transform/local = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -22 )
+
+[node name="Spatial 8" parent="walls" instance=ExtResource( 5 )]
+
+transform/local = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 21 )
+
+[node name="Spatial 9" parent="walls" instance=ExtResource( 6 )]
+
+transform/local = Transform( -4.37114e-08, 0, -1, 0, 1, 0, 1, 0, -4.37114e-08, 14, 0, -34 )
+
+[node name="Spatial10" parent="walls" instance=ExtResource( 6 )]
+
+transform/local = Transform( -4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, -24, 0, -17 )
+
+[node name="fences1" type="Spatial" parent="."]
+
+editor/display_folded = true
+_import_transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0 )
+
+[node name="Spatial" parent="fences1" instance=ExtResource( 7 )]
+
+transform/local = Transform( -1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 22, 0, 21 )
+
+[node name="Spatial 2" parent="fences1" instance=ExtResource( 8 )]
+
+transform/local = Transform( -1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 11, 0, 21 )
+
+[node name="Spatial4" parent="fences1" instance=ExtResource( 8 )]
+
+transform/local = Transform( -1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, -11, 0, 21 )
+
+[node name="Spatial3" parent="fences1" instance=ExtResource( 8 )]
+
+transform/local = Transform( -1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 0, 21 )
+
+[node name="Spatial1" parent="fences1" instance=ExtResource( 7 )]
+
+transform/local = Transform( -4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, -22, 0, 21 )
+
+[node name="fences2" type="Spatial" parent="."]
+
+editor/display_folded = true
+_import_transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0 )
+
+[node name="Spatial2" parent="fences2" instance=ExtResource( 7 )]
+
+transform/local = Transform( 1, 0, 1.74846e-07, 0, 1, 0, -1.74846e-07, 0, 1, -22, 0, -23 )
+
+[node name="Spatial5" parent="fences2" instance=ExtResource( 8 )]
+
+transform/local = Transform( 1, 0, 1.74846e-07, 0, 1, 0, -1.74846e-07, 0, 1, -11, 0, -23 )
+
+[node name="Spatial5 2" parent="fences2" instance=ExtResource( 8 )]
+
+transform/local = Transform( 1, 0, 1.74846e-07, 0, 1, 0, -1.74846e-07, 0, 1, 11, 0, -23 )
+
+[node name="Spatial5 3" parent="fences2" instance=ExtResource( 8 )]
+
+transform/local = Transform( 1, 0, 1.74846e-07, 0, 1, 0, -1.74846e-07, 0, 1, 0, 0, -23 )
+
+[node name="Spatial2 2" parent="fences2" instance=ExtResource( 7 )]
+
+transform/local = Transform( 1.31134e-07, 0, -1, 0, 1, 0, 1, 0, 1.31134e-07, 22, 0, -23 )
+
+[node name="fences3" type="Spatial" parent="."]
+
+editor/display_folded = true
+_import_transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0 )
+
+[node name="Spatial5" parent="fences3" instance=ExtResource( 8 )]
+
+transform/local = Transform( -2.18557e-07, 0, 1, 0, 1, 0, -1, 0, -2.18557e-07, -22, 0, 10 )
+
+[node name="Spatial5 2" parent="fences3" instance=ExtResource( 8 )]
+
+transform/local = Transform( -2.18557e-07, 0, 1, 0, 1, 0, -1, 0, -2.18557e-07, -22, 0, -12 )
+
+[node name="Spatial5 3" parent="fences3" instance=ExtResource( 8 )]
+
+transform/local = Transform( -2.18557e-07, 0, 1, 0, 1, 0, -1, 0, -2.18557e-07, -22, 0, -1 )
+
+[node name="fences4" type="Spatial" parent="."]
+
+editor/display_folded = true
+_import_transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0 )
+
+[node name="Spatial5" parent="fences4" instance=ExtResource( 8 )]
+
+transform/local = Transform( 3.0598e-07, 0, -1, 0, 1, 0, 1, 0, 3.0598e-07, 22, 0, -12 )
+
+[node name="Spatial5 2" parent="fences4" instance=ExtResource( 8 )]
+
+transform/local = Transform( 3.0598e-07, 0, -1, 0, 1, 0, 1, 0, 3.0598e-07, 22, 0, 10 )
+
+[node name="Spatial5 3" parent="fences4" instance=ExtResource( 8 )]
+
+transform/local = Transform( 3.0598e-07, 0, -1, 0, 1, 0, 1, 0, 3.0598e-07, 22, 0, -1 )
+
+
