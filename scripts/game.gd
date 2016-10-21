@@ -67,9 +67,7 @@ func create_game():
 	time = 0.0;
 	cl_name = gui.ui_gameManager.get_node("inName").get_text();
 	
-	init_world();
-	init_gui();
-	init_player();
+	init_game();
 
 func join_game():
 	var peer = NetworkedMultiplayerENet.new();
@@ -109,6 +107,7 @@ master func _player_joined(id, name):
 	if (!sv_players.has(id)):
 		return;
 	
+	rpc_id(id, "init_game");
 	gui.ui_scoreBoard.sync_item(id);
 	
 	rpc("create_player", id, name);
@@ -135,20 +134,21 @@ func _client_failed():
 func _client_disconnected():
 	print("Disconnected from server.");
 	
-	destroy_world();
+	destroy_game();
 	
 	gui.ui_gameManager.show();
 	gui.ui_inGame.hide();
 
-func init_world():
-	destroy_world();
-
-func init_gui():
+func init_game():
+	destroy_game();
+	
 	gui.ui_gameManager.hide();
 	gui.ui_inGame.show();
-
-func init_player():
-	create_player(get_tree().get_network_unique_id(), cl_name);
+	
+	gui.ui_scoreBoard.clear_items();
+	
+	if (get_tree().is_network_server()):
+		create_player(get_tree().get_network_unique_id(), cl_name);
 
 sync func create_player(id, name):
 	var inst = pfb_player.instance();
@@ -166,7 +166,7 @@ sync func create_player(id, name):
 	if (get_tree().is_network_server()):
 		sv_players[id] = inst;
 
-sync func destroy_world():
+sync func destroy_game():
 	for i in players.get_children():
 		i.queue_free();
 

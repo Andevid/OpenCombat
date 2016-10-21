@@ -89,6 +89,9 @@ func attachDeathCam(camYaw = 0.0):
 	camera.camera.make_current();
 
 func _exit_tree():
+	if (get_tree().is_network_server()):
+		game.gui.ui_scoreBoard.rpc("remove_item", player_id);
+	
 	if (!is_network_master()):
 		game.gui.ui_minimap.remove_object(self);
 

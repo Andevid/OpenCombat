@@ -5,8 +5,7 @@ onready var pfb_sbItem = load("res://prefabs/ui_sbItem.tscn");
 var items = {};
 var container;
 
-func _ready():
-	items.clear();
+func _ready():	
 	container = get_node("container");
 	
 	hide();
@@ -15,6 +14,12 @@ func _ready():
 func _input(ie):
 	if (ie.type == InputEvent.KEY && ie.scancode == KEY_TAB):
 		set_hidden(!ie.pressed);
+
+func clear_items():
+	for i in items.keys():
+		remove_item(i);
+	
+	items.clear();
 
 func sync_item(id):
 	if (!get_tree().is_network_server()):
@@ -42,6 +47,7 @@ sync func add_item(id, name = "Unnamed", kill = 0, death = 0):
 sync func remove_item(id):
 	if (!items.has(id)):
 		return;
+	items[id].item.queue_free();
 	items.erase(id);
 
 sync func set_clname(id, val):
