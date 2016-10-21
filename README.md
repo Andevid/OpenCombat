@@ -1,5 +1,6 @@
 # Open Combat
-## Open Source Multiplayer First Person Shooter Game
+
+Open Source Multiplayer First Person Shooter Game
 
 ### How to install:
 
