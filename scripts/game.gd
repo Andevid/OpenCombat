@@ -1,16 +1,18 @@
 extends Node
 
+const API_URL = "http://localhost/opencombat/server.php";
+
 onready var gui		= get_node("gui");
 onready var env		= get_node("env");
 onready var mainCam	= get_node("mainCamera");
 onready var players	= get_node("players");
 
 var time = 0.0;
+var udp = PacketPeerUDP.new();
+var http = HTTPRequest.new();
 
 var cl_name = "Player";
-
-var sv_players = {};
-
+var playerList = {};
 var pfb_player = "res://prefabs/player.tscn";
 
 func _ready():
@@ -23,9 +25,6 @@ func _ready():
 	get_tree().connect("connection_failed", self, "_client_failed");
 	get_tree().connect("server_disconnected", self, "_client_disconnected");
 	
-	gui.ui_gameManager.get_node("btnHost").connect("pressed", self, "create_game");
-	gui.ui_gameManager.get_node("btnConnect").connect("pressed", self, "join_game");
-	
 	gui.ui_inGame.hide();
 	gui.ui_gameManager.show();
 	
@@ -33,11 +32,22 @@ func _ready():
 	
 	mainCam.make_current();
 	
+	http.set_use_threads(true);
+	add_child(http);
+	
 	set_process(true);
 	set_process_input(true);
 
 func _process(delta):
 	time += delta;
+	
+	while (udp.get_available_packet_count() > 0):
+		var packet = udp.get_var();
+		var ip = udp.get_packet_ip();
+		var port = udp.get_packet_port();
+		
+		udp.set_send_address(ip, port);
+		udp.put_var([packet, playerList.size(), 32]);
 
 func _input(ie):
 	if (ie.type == InputEvent.KEY && ie.pressed):
@@ -53,26 +63,31 @@ func _input(ie):
 		if (ie.scancode == KEY_F2):
 			OS.set_window_maximized(!OS.is_window_maximized());
 
-func create_game():
+func create_game(port, maxClients = 32):
 	var peer = NetworkedMultiplayerENet.new();
-	var port = gui.ui_gameManager.get_node("inPort").get_text().to_int();
-	var max_clients = 32;
 	
-	if (peer.create_server(port, max_clients) != OK):
+	if (peer.create_server(port, maxClients) != OK):
 		print("Cannot create a server on port ", port, "!");
 		return;
 	
 	get_tree().set_network_peer(peer);
+	
+	if (udp.listen(port+1) != OK):
+		print("Cannot bind peer on port "+str(port+1)+"!");
+		return;
+	
+	var serverName = gui.ui_gameManager.get_node("inServerName").get_text().percent_encode();
+	
+	http.cancel_request();
+	http.request(API_URL+"?do=add&port="+str(port).percent_encode()+"&name="+serverName);
 	
 	time = 0.0;
 	cl_name = gui.ui_gameManager.get_node("inName").get_text();
 	
 	init_game();
 
-func join_game():
+func join_game(ip, port, password = ""):
 	var peer = NetworkedMultiplayerENet.new();
-	var ip = gui.ui_gameManager.get_node("inIP").get_text();
-	var port = gui.ui_gameManager.get_node("inPort").get_text().to_int();
 	
 	if (peer.create_client(ip, port) != OK):
 		print("Cannot create a client on ip ", ip, " & port ", port, "!");
@@ -90,21 +105,21 @@ func _peer_connected(id):
 	if (!get_tree().is_network_server()):
 		return;
 	
-	sv_players[id] = null;
+	playerList[id] = null;
 
 func _peer_disconnected(id):
 	if (!get_tree().is_network_server()):
 		return;
 	
-	if (sv_players.has(id)):
+	if (playerList.has(id)):
 		_player_disconnected(id);
-		sv_players.erase(id);
+		playerList.erase(id);
 
 master func _player_joined(id, name):
 	if (!get_tree().is_network_server()):
 		return;
 	
-	if (!sv_players.has(id)):
+	if (!playerList.has(id)):
 		return;
 	
 	rpc_id(id, "init_game");
@@ -112,7 +127,7 @@ master func _player_joined(id, name):
 	
 	rpc("create_player", id, name);
 	
-	for i in sv_players.keys():
+	for i in playerList.keys():
 		if (i == id):
 			continue;
 		rpc_id(id, "create_player", i, name);
@@ -162,18 +177,22 @@ sync func create_player(id, name):
 		inst.set_network_mode(NETWORK_MODE_SLAVE);
 	
 	players.add_child(inst);
-	
-	if (get_tree().is_network_server()):
-		sv_players[id] = inst;
+	playerList[id] = inst;
 
 sync func destroy_game():
 	for i in players.get_children():
 		i.queue_free();
 
 sync func destroy_player(id):
-	if (get_tree().is_network_server() && !sv_players.has(id)):
+	if (get_tree().is_network_server() && !playerList.has(id)):
 		return;
 	var node = players.get_node(str(id));
 	if (!node):
 		return;
 	node.queue_free();
+
+func playerByID(id):
+	if (!playerList.has(id)):
+		return null;
+	
+	return playerList[id];

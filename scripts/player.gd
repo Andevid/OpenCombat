@@ -7,8 +7,9 @@ onready var game	= get_node("/root/game");
 onready var body	= get_node("body");
 onready var raycast	= get_node("ray");
 
-onready var pfb_fpsCam = load("res://prefabs/fps_cam.tscn");
-onready var pfb_gunDecal = load("res://prefabs/gun_decal.tscn");
+onready var pfb_fpsCam = load("res://prefabs/fpsCam.tscn");
+onready var pfb_deathCam = load("res://prefabs/deathCam.tscn");
+onready var pfb_gunDecal = load("res://prefabs/gunDecal.tscn");
 
 var camera;
 var hv = Vector3();
@@ -31,13 +32,14 @@ var player_health = 100.0;
 var player_lastHit = 0.0;
 var player_ani = "";
 var player_curAni = "";
+var player_nextSpawn = 0.0;
 
 var wpn_ani = "";
 var wpn_curAni = "";
 var wpn_clip = 30;
 var wpn_maxclip = wpn_clip;
 var wpn_ammo = 360;
-var wpn_damage = [4.0, 8.0];
+var wpn_damage = [12.0, 18.0];
 var wpn_firing = false;
 var wpn_reloading = false;
 var wpn_nextIdle = 0.0;
@@ -51,16 +53,11 @@ func _ready():
 		
 		game.gui.ui_scoreBoard.rpc("add_item", player_id, player_name, 0, 0);
 	
+	playerAnimation = body.get_node("models").find_node("AnimationPlayer");
+	
 	if (is_network_master()):
-		body.queue_free();
-		body = null;
-		
 		attachFPSCam();
-		
-		weaponAnimation	= camera.weapon.find_node("AnimationPlayer");
 	else:
-		playerAnimation = body.get_node("models").find_node("AnimationPlayer");
-		
 		game.gui.ui_minimap.add_object(self);
 	
 	set_process(true);
@@ -73,20 +70,26 @@ func attachFPSCam():
 	
 	camera = pfb_fpsCam.instance();
 	camera.set_name("camera");
-	add_child(camera);
 	camera.set_translation(get_node("camPos").get_translation());
-	camera.camera.make_current();
+	add_child(camera);
+	
+	weaponAnimation	= camera.weapon.find_node("AnimationPlayer");
+	
+	body.hide();
 
-func attachDeathCam(camYaw = 0.0):
+func attachDeathCam(target = null):
 	if (camera != null):
 		camera.queue_free();
 		camera = null;
 	
-	camera = pfb_fpsCam.instance();
+	camera = pfb_deathCam.instance();
 	camera.set_name("camera");
+	camera.target = target;
+	camera.yaw = yaw;
+	camera.startPos = get_node("camPos").get_translation();
 	add_child(camera);
-	camera.set_translation(get_node("camPos").get_translation());
-	camera.camera.make_current();
+	
+	body.show();
 
 func _exit_tree():
 	if (get_tree().is_network_server()):
@@ -103,17 +106,30 @@ func _process(delta):
 			wpn_ammo
 		];
 		rpc_unreliable("client_data", cl_data);
+		
+		respawn();
+
+func can_spawn():
+	return !is_alive() && game.time > player_nextSpawn;
+
+func respawn():
+	if (!can_spawn()):
+		return;
+	
+	player_health = 100.0;
+	set_translation(Vector3(0,1,0));
+	
+	rpc("player_spawned");
 
 func _fixed_process(delta):
-	if (is_network_master()):
+	if (is_network_master() && is_alive()):
 		var cam_trans = camera.camera.get_global_transform();
 		raydir = [
 			cam_trans.origin,
 			(cam_trans.xform(Vector3(0, 0, -1))-cam_trans.origin).normalized()
 		];
 		rset_unreliable("raydir", raydir);
-	
-	if (is_network_master()):
+		
 		game.gui.ui_minimap.pos = get_global_transform().origin;
 		game.gui.ui_minimap.rot = yaw;
 		
@@ -134,11 +150,14 @@ func _fixed_process(delta):
 			wpn_shoot();
 			wpn_reload();
 		
-		if (is_alive() && player_curAni != player_ani):
+		else:
+			set_playerAnimation("die");
+		
+		if (player_curAni != player_ani):
 			rpc("set_playerAnimation", player_ani, true);
 			player_curAni = player_ani;
 	
-	if (body != null):
+	if (is_alive() && body != null):
 		body.set_rotation(Vector3(0, deg2rad(yaw), 0));
 	
 	if (get_tree().is_network_server()):
@@ -154,7 +173,7 @@ func _integrate_forces(state):
 	var delta = state.get_step();
 	var lv = get_linear_velocity();
 	
-	if (is_network_master()):
+	if (is_network_master() && is_alive()):
 		var basis = camera.camera.get_global_transform().basis;
 		dir = Vector3();
 		
@@ -210,17 +229,18 @@ func is_moving():
 func is_firing():
 	return is_alive() && wpn_firing;
 
-slave func set_playerAnimation(ani = player_ani, force = false):
+sync func set_playerAnimation(ani = player_ani, force = false):
 	player_ani = ani;
 	
-	if (force && !is_network_master()):
+	if (playerAnimation.get_current_animation() != ani || force):
 		playerAnimation.play(ani);
 
 master func set_wpnAnimation(ani = wpn_ani, force = false):
 	wpn_ani = ani;
 	
-	if (force && is_network_master()):
-		weaponAnimation.play(ani);
+	if (is_network_master() && is_alive()):
+		if (force):
+			weaponAnimation.play(ani);
 
 func wpn_idle():
 	if (game.time < wpn_nextIdle):
@@ -262,10 +282,10 @@ func wpn_shoot():
 			rpc_unreliable("gun_decal", result.position, result.normal);
 	
 	rpc_unreliable("set_wpnAnimation", "shoot", true);
-	rpc_unreliable("apply_clientfx", Vector2(rand_range(-2.0, 2.0), rand_range(-0.5, 2.0))*0.2);
+	rpc_unreliable("apply_clientfx", Vector2(rand_range(-2.0, 2.0), rand_range(-0.5, 2.0))*0.35);
 	
 	wpn_nextIdle = game.time+0.3;
-	wpn_nextShoot = game.time+1/20.0;
+	wpn_nextShoot = game.time+1/10.0;
 	wpn_firing = true;
 
 func wpn_reload():
@@ -276,7 +296,7 @@ func wpn_reload():
 	
 	rpc("set_wpnAnimation", "reload", true);
 	
-	wpn_nextIdle = game.time+1.3;
+	wpn_nextIdle = game.time+2.0;
 	wpn_nextShoot = wpn_nextIdle;
 	wpn_firing = false;
 	wpn_reloading = true;
@@ -297,12 +317,12 @@ master func client_data(cl_data):
 	if (!is_network_master()):
 		return;
 	
-	var health = cl_data[0];
-	var clip = cl_data[1];
-	var ammo = cl_data[2];
+	player_health = cl_data[0];
+	wpn_clip = cl_data[1];
+	wpn_ammo = cl_data[2];
 	
-	game.gui.ui_lblHealth.set_text(str(int(health)).pad_zeros(3));
-	game.gui.ui_lblAmmo.set_text(str(int(clip)).pad_zeros(3) + "/" + str(int(ammo)).pad_zeros(3));
+	game.gui.ui_lblHealth.set_text(str(int(player_health)).pad_zeros(3));
+	game.gui.ui_lblAmmo.set_text(str(int(wpn_clip)).pad_zeros(3) + "/" + str(int(wpn_ammo)).pad_zeros(3));
 
 sync func apply_damage(attacker, dmg):
 	if (get_tree().is_network_server()):
@@ -324,6 +344,24 @@ sync func gun_decal(pos, normal):
 
 sync func player_killed(killer):
 	if (get_tree().is_network_server()):
-		game.gui.ui_scoreBoard.increment_kill(killer, 1);
+		player_nextSpawn = game.time+3.0;
+		rpc("drawSpawnBar", 3.0);
 		
-		print(player_id, " killed by ", killer);
+		game.gui.ui_scoreBoard.increment_kill(killer, 1);
+	
+	if (is_network_master()):
+		player_health = 0;
+		attachDeathCam(game.playerByID(killer));
+
+sync func player_spawned():
+	if (get_tree().is_network_server()):
+		rpc("set_wpnAnimation", "reload");
+	
+	if (is_network_master()):
+		attachFPSCam();
+
+sync func drawSpawnBar(time):
+	if (!is_network_master()):
+		return;
+	
+	game.gui.ui_spawnBar.draw_spawnBar(time);

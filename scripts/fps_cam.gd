@@ -32,14 +32,16 @@ func _ready():
 	pitch = camera.get_rotation_deg().x;
 	yaw = base.get_rotation_deg().y;
 	
+	camera.make_current();
+	
 	set_process(true);
 	set_process_input(true);
 
-func _enter_tree():
-	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED);
+#func _enter_tree():
+	#Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED);
 
-func _exit_tree():
-	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE);
+#func _exit_tree():
+#	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE);
 
 func _process(delta):
 	if (player.is_firing()):
