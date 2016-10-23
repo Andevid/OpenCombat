@@ -2,14 +2,14 @@ extends Node
 
 const API_URL = "http://localhost/opencombat/server.php";
 
-onready var gui		= get_node("gui");
-onready var env		= get_node("env");
-onready var mainCam	= get_node("mainCamera");
-onready var players	= get_node("players");
+onready var gui = get_node("gui");
+onready var env = get_node("env");
+onready var masterServer = get_node("masterServer");
+onready var mainCam = get_node("mainCamera");
+onready var players = get_node("players");
 
 var time = 0.0;
 var udp = PacketPeerUDP.new();
-var http = HTTPRequest.new();
 
 var cl_name = "Player";
 var playerList = {};
@@ -31,9 +31,6 @@ func _ready():
 	pfb_player = load(pfb_player);
 	
 	mainCam.make_current();
-	
-	http.set_use_threads(true);
-	add_child(http);
 	
 	set_process(true);
 	set_process_input(true);
@@ -76,13 +73,11 @@ func create_game(port, maxClients = 32):
 		print("Cannot bind peer on port "+str(port+1)+"!");
 		return;
 	
-	var serverName = gui.ui_gameManager.get_node("inServerName").get_text().percent_encode();
-	
-	http.cancel_request();
-	http.request(API_URL+"?do=add&port="+str(port).percent_encode()+"&name="+serverName);
-	
 	time = 0.0;
 	cl_name = gui.ui_gameManager.get_node("inName").get_text();
+	
+	var serverName = gui.ui_gameManager.get_node("inServerName").get_text().percent_encode();
+	masterServer.register_server(port, serverName);
 	
 	init_game();
 

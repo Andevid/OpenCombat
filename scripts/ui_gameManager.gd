@@ -6,16 +6,11 @@ onready var game = get_node("/root/game");
 onready var container = get_node("server/container");
 onready var pfb_srvListItem = load("res://prefabs/ui_srvListItem.tscn");
 
-var http = HTTPRequest.new();
 var udp = PacketPeerUDP.new();
 
 var listingQueue = {};
 
-func _ready():
-	http.set_use_threads(true);
-	http.connect("request_completed", self, "on_serverRequest_completed");
-	add_child(http);
-	
+func _ready():	
 	randomize();
 	var udpPort = int(rand_range(25000, 25100));
 	if (udp.listen(udpPort) != OK):
@@ -27,8 +22,6 @@ func _ready():
 	get_node("btnConnect").connect("pressed", self, "connectServer");
 	
 	set_process(true);
-	
-	refreshServer();
 
 func _process(delta):
 	while (udp.get_available_packet_count() > 0):
@@ -43,38 +36,26 @@ func _process(delta):
 func refreshServer():
 	get_node("btnRefresh").set_disabled(true);
 	
-	http.cancel_request();
-	http.request(game.API_URL+"?do=lists");
+	if (!game.masterServer.is_connected("server_retrieved", self, "on_server_retrieved")):
+		game.masterServer.connect("server_retrieved", self, "on_server_retrieved");
+	
+	game.masterServer.retrieve_server();
 
 func hostServer():
-	http.cancel_request();
-	
 	var port = get_node("inPort").get_text().to_int();
 	var maxClients = 32;
 	
 	game.create_game(port, maxClients);
 
 func connectServer():
-	http.cancel_request();
-	
 	var ip = get_node("inIP").get_text();
 	var port = get_node("inPort").get_text().to_int();
 	var password = get_node("inPass").get_text();
 	
 	game.join_game(ip, port, password);
 
-func on_serverRequest_completed(result, response, headers, body):
+func on_server_retrieved(servers):
 	get_node("btnRefresh").set_disabled(false);
-	
-	if (result != HTTPRequest.RESULT_SUCCESS):
-		return;
-	
-	var text = body.get_string_from_utf8();
-	var json = {};
-	json.parse_json(text);
-	
-	if (json.empty() || json.status != 'ok'):
-		return;
 	
 	listingQueue.clear();
 	
@@ -83,8 +64,8 @@ func on_serverRequest_completed(result, response, headers, body):
 	
 	var id = 1;
 	
-	for i in json.result:
-		listingQueue[id] = [str(id, ". ")+i.name, i.ip, i.port.to_int(), i.password, game.time];
+	for i in servers.result:
+		listingQueue[id] = [i.name, i.ip, i.port.to_int(), true, game.time];
 		udp.set_send_address(i.ip, i.port.to_int()+1);
 		udp.put_var(id);
 		id += 1;
