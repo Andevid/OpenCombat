@@ -68,9 +68,16 @@ sync func set_death(id, val):
 	items[id].death = val;
 	items[id].item.get_node("lblDeath").set_text(str(int(val)));
 
-func increment_kill(id, increment):
+func increase_kill(id, increment):
 	if (!get_tree().is_network_server()):
 		return;
 	
 	items[id].kill += increment;
 	rpc("set_kill", id, items[id].kill);
+	
+func increase_death(id, increment):
+	if (!get_tree().is_network_server()):
+		return;
+	
+	items[id].death += increment;
+	rpc("set_death", id, items[id].death);

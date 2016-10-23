@@ -33,6 +33,7 @@ var player_lastHit = 0.0;
 var player_ani = "";
 var player_curAni = "";
 var player_nextSpawn = 0.0;
+var player_nextClientDataSync = 0.0;
 
 var wpn_ani = "";
 var wpn_curAni = "";
@@ -53,12 +54,12 @@ func _ready():
 		
 		game.gui.ui_scoreBoard.rpc("add_item", player_id, player_name, 0, 0);
 	
+	if (!is_network_master()):
+		game.gui.ui_minimap.add_object(self);
+	
 	playerAnimation = body.get_node("models").find_node("AnimationPlayer");
 	
-	if (is_network_master()):
-		attachFPSCam();
-	else:
-		game.gui.ui_minimap.add_object(self);
+	rpc("player_spawned");
 	
 	set_process(true);
 	set_fixed_process(true);
@@ -85,7 +86,6 @@ func attachDeathCam(target = null):
 	camera = pfb_deathCam.instance();
 	camera.set_name("camera");
 	camera.target = target;
-	camera.yaw = yaw;
 	camera.startPos = get_node("camPos").get_translation();
 	add_child(camera);
 	
@@ -100,14 +100,16 @@ func _exit_tree():
 
 func _process(delta):
 	if (get_tree().is_network_server()):
-		var cl_data = [
-			player_health,
-			wpn_clip,
-			wpn_ammo
-		];
-		rpc_unreliable("client_data", cl_data);
-		
 		respawn();
+		
+		if (game.time > player_nextClientDataSync):
+			var cl_data = [
+				player_health,
+				wpn_clip,
+				wpn_ammo
+			];
+			rpc_unreliable("client_data", cl_data);
+			player_nextClientDataSync = game.time+1/30.0;
 
 func can_spawn():
 	return !is_alive() && game.time > player_nextSpawn;
@@ -285,7 +287,7 @@ func wpn_shoot():
 	rpc_unreliable("apply_clientfx", Vector2(rand_range(-2.0, 2.0), rand_range(-0.5, 2.0))*0.35);
 	
 	wpn_nextIdle = game.time+0.3;
-	wpn_nextShoot = game.time+1/10.0;
+	wpn_nextShoot = game.time+1/18.0;
 	wpn_firing = true;
 
 func wpn_reload():
@@ -334,7 +336,7 @@ sync func apply_damage(attacker, dmg):
 				rpc("player_killed", attacker);
 	
 	if (is_network_master()):
-		if (dmg > 0.0):
+		if (is_alive() && dmg > 0.0):
 			game.gui.fx_bloodOverlay();
 
 sync func gun_decal(pos, normal):
@@ -342,12 +344,27 @@ sync func gun_decal(pos, normal):
 	inst.look_at_from_pos(pos, pos+normal, Vector3(1,1,1));
 	game.env.add_child(inst);
 
+sync func set_targetable():
+	set_mode(MODE_CHARACTER);
+	
+	for i in range(0, get_shape_count()):
+		set_shape_as_trigger(i, false);
+
+sync func set_untargetable():
+	set_mode(MODE_STATIC);
+	
+	for i in range(0, get_shape_count()):
+		set_shape_as_trigger(i, true);
+
 sync func player_killed(killer):
 	if (get_tree().is_network_server()):
 		player_nextSpawn = game.time+3.0;
 		rpc("drawSpawnBar", 3.0);
 		
-		game.gui.ui_scoreBoard.increment_kill(killer, 1);
+		game.gui.ui_scoreBoard.increase_kill(killer, 1);
+		game.gui.ui_scoreBoard.increase_death(player_id, 1);
+		
+		rpc("set_untargetable");
 	
 	if (is_network_master()):
 		player_health = 0;
@@ -355,10 +372,16 @@ sync func player_killed(killer):
 
 sync func player_spawned():
 	if (get_tree().is_network_server()):
-		rpc("set_wpnAnimation", "reload");
+		rpc("set_targetable");
 	
 	if (is_network_master()):
 		attachFPSCam();
+		
+		rpc("player_ready");
+
+sync func player_ready():
+	if (get_tree().is_network_server()):
+		rpc("set_wpnAnimation", "reload", true);
 
 sync func drawSpawnBar(time):
 	if (!is_network_master()):

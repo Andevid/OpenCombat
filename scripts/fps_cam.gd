@@ -37,11 +37,11 @@ func _ready():
 	set_process(true);
 	set_process_input(true);
 
-#func _enter_tree():
-	#Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED);
+func _enter_tree():
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED);
 
-#func _exit_tree():
-#	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE);
+func _exit_tree():
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE);
 
 func _process(delta):
 	if (player.is_firing()):
@@ -52,10 +52,12 @@ func _process(delta):
 	
 	if (player.is_firing()):
 		bob_angle = 0.0;
+	
 	elif (player.is_moving()):
 		bob_angle = fmod(bob_angle+(2*PI*delta*bob_speed), 2*PI);
 		wpn_pos.x += sin(bob_angle)*bob_length;
 		wpn_pos.y += -abs(cos(bob_angle))*bob_length;
+	
 	else:
 		bob_angle = fmod(bob_angle+(2*PI*delta*0.25), 2*PI);
 		wpn_pos.y += sin(bob_angle)*bob_length*0.4;
