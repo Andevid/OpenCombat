@@ -1,7 +1,5 @@
 extends Node
 
-const API_URL = "http://localhost/opencombat/server.php";
-
 onready var gui = get_node("gui");
 onready var env = get_node("env");
 onready var masterServer = get_node("masterServer");
