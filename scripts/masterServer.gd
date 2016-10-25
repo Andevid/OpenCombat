@@ -3,8 +3,8 @@ extends HTTPRequest
 signal server_registered();
 signal server_retrieved(servers);
 
-#const MS_URL = "http://localhost/opencombat/masterserver/";
-const MS_URL = "http://opencombat.tuxfamily.org/ms/";
+const MS_URL = "http://localhost/opencombat/ms/";
+#const MS_URL = "http://opencombat.tuxfamily.org/ms/";
 
 const TASK_NONE = 0;
 const TASK_RETRIEVE = 1;
